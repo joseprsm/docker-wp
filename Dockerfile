@@ -1,30 +1,37 @@
-ARG SITE_TITLE
-ARG ADMIN_EMAIL
-ARG ADMIN_USER="admin"
-ARG ADMIN_PASSWORD="admin"
-
-FROM wordpress:latest
+FROM ubuntu:latest
 
 WORKDIR /usr/src/wordpress
 
-ENV SITE_TITLE=$SITE_TITLE
-ENV ADMIN_USER=$ADMIN_USER
-ENV ADMIN_EMAIL=$ADMIN_EMAIL
-ENV ADMIN_PASSWORD=$ADMIN_PASSWORD
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Install base dependencies
+RUN apt-get update && apt-get install -y \
+    apache2 \
+    mysql-server \
+    php \
+    php-mysql \
+    libapache2-mod-php \
+    curl \
+    unzip
 
 # Install WP-CLI
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
 
-# Set the default user to "www-data" to avoid permissions issues
-RUN usermod -u 1000 www-data
+# Setup MySQL database, Wordpress
+RUN service mysql start \
+    && mysql -u root -e "CREATE DATABASE wordpress" \
+    && mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'" \
+    && mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'" \
+    && mysql -u root -e "FLUSH PRIVILEGES" \
+    && wp core download --allow-root \
+    && wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root \
+    && wp core install --url=localhost --title=stswh --admin_user=admin --admin_email=joseprsm@gmail.com --admin_password=admin --allow-root
 
-# Install WordPress
-RUN wp core download --allow-root \
-    && wp config create --dbname=$WORDPRESS_DB_NAME --dbuser=$WORDPRESS_DB_USER --dbpass=$WORDPRESS_DB_PASSWORD --dbhost=$WORDPRESS_DB_HOST --allow-root \
-    && wp core install --url=localhost --title=$SITE_TITLE --admin_user=$ADMIN_USER --admin_email=$ADMIN_EMAIL --admin_password=$ADMIN_PASSWORD --allow-root
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
+    a2enmod rewrite && \
+    service apache2 restart
 
 # Install plugins
 RUN apt-get update \
@@ -36,4 +43,4 @@ RUN apt-get update \
 
 EXPOSE 80
 
-ENTRYPOINT [ "wp", "server", "--allow-root" ]
+CMD service mysql start && wp server --host=0.0.0.0 --allow-root
