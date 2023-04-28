@@ -3,6 +3,11 @@ FROM ubuntu:latest
 WORKDIR /usr/src/wordpress
 
 ARG PLUGINS='[]'
+ARG SITE_TITLE
+ARG ADMIN_EMAIL
+ARG ADMIN_USER
+ARG ADMIN_PASSWORD
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEFAULT_PLUGINS='["elementor", "wordpress-importer"]'
 
@@ -30,7 +35,7 @@ RUN service mysql start \
     && mysql -u root -e "FLUSH PRIVILEGES" \
     && wp core download --allow-root \
     && wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root \
-    && wp core install --url=localhost --title=stswh --admin_user=admin --admin_email=joseprsm@gmail.com --admin_password=admin --allow-root
+    && wp core install --url=localhost --title=${SITE_TITLE} --admin_user=${ADMIN_USER} --admin_email=${ADMIN_EMAIL} --admin_password=${ADMIN_PASSWORD} --allow-root
 
 # Configure Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \

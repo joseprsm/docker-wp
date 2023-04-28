@@ -40,4 +40,9 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            SITE_TITLE=${{ vars.SITE_TITLE }}
+            ADMIN_USER=${{ secrets.ADMIN_USER }}
+            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+            PLUGINS=${{ vars.PLUGINS }}
