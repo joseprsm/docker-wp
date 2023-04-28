@@ -21,7 +21,7 @@ All you have to do then is re-build and push the Docker image to a registry, fro
 You can add plugins to your WordPress installation using the `PLUGINS` build argument. To add plugins, simply add them as a JSON list while building the Docker image. For example:
 
 ```shell
-docker build . -t docker-wp --build-arg PLUGINS ='["contact-form-7", "wp-super-cache"]'
+docker build . -t docker-wp --build-arg PLUGINS='["contact-form-7", "wp-super-cache"]'
 ```
 
 After rebuilding the Docker image, the plugins will be automatically installed and activated when the container starts up.
