@@ -19,13 +19,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Log into registry ${{ env.REGISTRY }}
-        uses: docker/login-action
+        uses: docker/login-action@28218f9b04b4f3f62068d7b6ce6ca5b26e35336c
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker Image
-        uses: docker/build-push-action
+        uses: docker/build-push-action@ac9327eae2b366085ac7f6a2d02df8aa8ead720a
         with:
           context: .
