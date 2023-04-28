@@ -47,7 +47,7 @@ COPY templates templates
 RUN service mysql start \
     && wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
     && wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
-    && wp import templates --authors=create --allow-root
+    && [[ $(ls -A templates | wc -l) -gt 1 ]] && wp import templates --authors=create --allow-root || echo "No templates"
 
 EXPOSE 80
 
