@@ -2,6 +2,7 @@ FROM ubuntu:latest
 
 WORKDIR /usr/src/wordpress
 
+ARG PLUGINS='["elementor"]'
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install base dependencies
@@ -36,8 +37,7 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
     service apache2 restart
 
 # Install plugins
-COPY plugins.json .
-RUN service mysql start && wp plugin install $(cat plugins.json | jq -r ".[]") --activate --allow-root
+RUN service mysql start && wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root
 
 EXPOSE 80
 
