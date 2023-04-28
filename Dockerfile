@@ -2,7 +2,7 @@ FROM ubuntu:latest
 
 WORKDIR /usr/src/wordpress
 
-ARG PLUGINS='["elementor"]'
+ARG PLUGINS='["elementor", "wordpress-importer"]'
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install base dependencies
@@ -37,7 +37,17 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
     service apache2 restart
 
 # Install plugins
-RUN service mysql start && wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root
+RUN service mysql start \
+    && wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root \
+    && wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root
+
+# Reset and import website
+COPY templates templates
+
+RUN service mysql start \
+    && wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
+    && wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
+    && wp import templates --authors=create --allow-root
 
 EXPOSE 80
 
