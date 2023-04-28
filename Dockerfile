@@ -2,8 +2,9 @@ FROM ubuntu:latest
 
 WORKDIR /usr/src/wordpress
 
-ARG PLUGINS='["elementor", "wordpress-importer"]'
+ARG PLUGINS='[]'
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEFAULT_PLUGINS='["elementor", "wordpress-importer"]'
 
 # Install base dependencies
 RUN apt-get update && apt-get install -y \
@@ -39,7 +40,8 @@ RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
 # Install plugins
 RUN service mysql start \
     && wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root \
-    && wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root
+    && wp plugin install $(echo ${DEFAULT_PLUGINS} | jq -r ".[]") --activate --allow-root \
+    && if [[ $(echo $PLUGINS | jq -r '. | length') -gt 0 ]]; then wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root; fi
 
 # Reset and import website
 COPY templates templates
@@ -47,7 +49,7 @@ COPY templates templates
 RUN service mysql start \
     && wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
     && wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
-    && [[ $(ls -A templates | wc -l) -gt 1 ]] && wp import templates --authors=create --allow-root || echo "No templates"
+    && if [[ $(ls -A templates | wc -l) -gt 1 ]]; then wp import templates --authors=create --allow-root; fi
 
 EXPOSE 80
 
