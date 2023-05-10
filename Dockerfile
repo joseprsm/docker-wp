@@ -8,8 +8,14 @@ ARG ADMIN_EMAIL
 ARG ADMIN_USER
 ARG ADMIN_PASSWORD
 
+ENV PLUGINS=$PLUGINS
+ENV SITE_TITLE=$SITE_TITLE
+ENV ADMIN_EMAIL=$ADMIN_EMAIL
+ENV ADMIN_USER=$ADMIN_USER
+ENV ADMIN_PASSWORD=$ADMIN_PASSWORD
 ENV DEBIAN_FRONTEND=noninteractive
-ENV DEFAULT_PLUGINS='["elementor", "wordpress-importer"]'
+
+EXPOSE 80
 
 # Install base dependencies
 RUN apt-get update && apt-get install -y \
@@ -27,35 +33,10 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
     && chmod +x wp-cli.phar \
     && mv wp-cli.phar /usr/local/bin/wp
 
-# Setup MySQL Database
-RUN service mysql start \
-    && mysql -u root -e "CREATE DATABASE wordpress" \
-    && mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'" \
-    && mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'" \
-    && mysql -u root -e "FLUSH PRIVILEGES" \
-    && wp core download --allow-root \
-    && wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root \
-    && wp core install --url=localhost --title=${SITE_TITLE} --admin_user=${ADMIN_USER} --admin_email=${ADMIN_EMAIL} --admin_password=${ADMIN_PASSWORD} --allow-root
-
-# Configure Apache
-RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
-    a2enmod rewrite && \
-    service apache2 restart
-
-# Install plugins
-RUN service mysql start \
-    && wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root \
-    && wp plugin install $(echo ${DEFAULT_PLUGINS} | jq -r ".[]") --activate --allow-root \
-    && if [[ $(echo $PLUGINS | jq -r '. | length') -gt 0 ]]; then wp plugin install $(echo ${PLUGINS} | jq -r ".[]") --activate --allow-root; fi
-
-# Reset and import website
+# Run setup
 COPY templates templates
-
-RUN service mysql start \
-    && wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
-    && wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root \
-    && if [[ $(ls -A templates | wc -l) -gt 1 ]]; then wp import templates --authors=create --allow-root; fi
-
-EXPOSE 80
+COPY plugins plugins
+COPY setup .
+RUN service mysql start && ./setup
 
 CMD service mysql start && wp server --host=0.0.0.0 --allow-root

@@ -1,0 +1,54 @@
+#!/bin/bash
+
+DEFAULT_PLUGINS='["wordpress-importer"]'
+
+setup_db() {
+    echo "⚙️ Setting up $SITE_TITLE"
+    mysql -u root -e "CREATE DATABASE wordpress"
+    mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'"
+    mysql -u root -e "FLUSH PRIVILEGES"
+    wp core download --allow-root
+    wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
+    wp core install --url=localhost --title=$1 --admin_user=$2 --admin_email=$3 --admin_password=$4 --allow-root
+}
+
+setup_apache() {
+    "ServerName localhost" >> /etc/apache2/apache2.conf
+    a2enmod rewrite
+    service apache2 restart
+}
+
+setup_db $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
+setup_apache
+
+install_plugins() {
+    wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root
+    wp plugin install $(echo ${DEFAULT_PLUGINS} | jq -r ".[]") --activate --allow-root
+
+    if [[ $(echo $1 | jq -r '. | length') -gt 0 ]]
+    then 
+        wp plugin install $(echo $1 | jq -r ".[]") --activate --allow-root
+    fi
+    
+    if [[ $(ls -A plugins | wc -l ) -gt 1 ]] 
+    then 
+        for plugin in $(ls plugins)
+        do
+            wp plugin install $plugin --activate --allow-root
+        done
+    fi
+}
+
+load_template() {
+    wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root
+    wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root
+    
+    if [[ $(ls -A templates | wc -l) -gt 1 ]]
+    then 
+        wp import templates --authors=create --allow-root
+    fi
+}
+
+install_plugins $PLUGINS
+load_template
