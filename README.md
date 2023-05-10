@@ -26,6 +26,8 @@ docker build . -t docker-wp --build-arg PLUGINS='["contact-form-7", "wp-super-ca
 
 After rebuilding the Docker image, the plugins will be automatically installed and activated when the container starts up.
 
+Alternatively, you can add your plugins to the `plugins/` folder. During the build, all the plugins under this directory will be installed and activated.
+
 ## License
 
 This project is licensed under the [MIT License](https://github.com/joseprsm/docker-wp/blob/main/LICENSE).
