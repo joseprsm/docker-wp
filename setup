@@ -9,17 +9,24 @@ setup_db() {
     mysql -u root -e "FLUSH PRIVILEGES"
     wp core download --allow-root
     wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
-    wp core install --url=localhost --title=$1 --admin_user=$2 --admin_email=$3 --admin_password=$4 --allow-root
+    wp core install --url=localhost --title="$1" --admin_user="$2" --admin_email="$3" --admin_password="$4" --allow-root
+}
+
+change_max_size() {
+    ini_files=$(find / -name "php.ini")
+    for $ini_file in $ini_files
+    do
+        sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' $ini_file
+        sed -i 's/post_max_size = 8M/post_max_size = 256M/' $ini_file
+    done
 }
 
 setup_apache() {
-    "ServerName localhost" >> /etc/apache2/apache2.conf
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     a2enmod rewrite
+    change_max_size
     service apache2 restart
 }
-
-setup_db $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
-setup_apache
 
 install_plugins() {
     wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root
@@ -49,5 +56,7 @@ import() {
     fi
 }
 
+setup_db $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
+setup_apache
 install_plugins $PLUGINS
 import
