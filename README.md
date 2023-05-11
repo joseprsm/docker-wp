@@ -1,6 +1,6 @@
-# Containerized WordPress + Elementor
+# Containerized WordPress
 
-This is a template for deploying a WordPress website in a Docker container. It includes the Elementor plugin, so you can create your pages via their powerful, drag-and-drop editor without the hassle (or costs) of setting WordPress.
+This is a template for deploying a WordPress website in a Docker container.
 
 ## Requirements
  
