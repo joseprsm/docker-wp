@@ -3,7 +3,6 @@
 DEFAULT_PLUGINS='["wordpress-importer"]'
 
 setup_db() {
-    echo "⚙️ Setting up $SITE_TITLE"
     mysql -u root -e "CREATE DATABASE wordpress"
     mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'"
     mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'"
@@ -40,7 +39,7 @@ install_plugins() {
     fi
 }
 
-load_template() {
+import() {
     wp post delete $(wp post list --field=ID --format=json --allow-root | jq -r ".[]") --allow-root
     wp post delete $(wp post list --post_type=page --field=ID --format=json --allow-root | jq -r ".[]") --allow-root
     
@@ -51,4 +50,4 @@ load_template() {
 }
 
 install_plugins $PLUGINS
-load_template
+import
