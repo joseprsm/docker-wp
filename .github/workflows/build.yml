@@ -41,8 +41,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            SITE_TITLE=${{ vars.SITE_TITLE }}
-            ADMIN_USER=${{ secrets.ADMIN_USER }}
-            ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+            SITE_TITLE=${{ github.event.repository.name }}
+            ADMIN_USER=${{ vars.ADMIN_USER }}
+            ADMIN_EMAIL=${{ github.event.pusher.email }}
             ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
             PLUGINS=${{ vars.PLUGINS }}
