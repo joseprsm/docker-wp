@@ -2,24 +2,30 @@
 
 DEFAULT_PLUGINS='["wordpress-importer"]'
 
-setup_db() {
+configure_db() {
     mysql -u root -e "CREATE DATABASE wordpress"
     mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'"
     mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'"
     mysql -u root -e "FLUSH PRIVILEGES"
-    wp core download --allow-root
-    wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
-    wp core install --url=localhost --title=$1 --admin_user=$2 --admin_email=$3 --admin_password=$4 --allow-root
 }
 
-setup_apache() {
-    "ServerName localhost" >> /etc/apache2/apache2.conf
+configure_wp() {
+    wp core download --allow-root
+    wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
+    wp core install --url=localhost --title="$1" --admin_user="$2" --admin_email="$3" --admin_password="$4" --allow-root
+}
+
+change_max_size() {
+    php_ini_file=$(php -i | grep "php.ini" | grep -o '=>.*$' | awk '{print $2}' | tail -1)
+    sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 256M/' $php_ini_file
+    sed -i 's/post_max_size = 8M/post_max_size = 256M/' $php_ini_file
+}
+
+configure_apache() {
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     a2enmod rewrite
     service apache2 restart
 }
-
-setup_db $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
-setup_apache
 
 install_plugins() {
     wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root
@@ -49,5 +55,9 @@ import() {
     fi
 }
 
+configure_db
+change_max_size
+configure_wp $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
+configure_apache
 install_plugins $PLUGINS
 import
