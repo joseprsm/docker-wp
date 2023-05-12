@@ -27,7 +27,7 @@ configure_ssl() {
     openssl req -x509 -new -days 365 -newkey rsa:4096 -sha256 -nodes \
         -out /etc/apache2/ssl/apache.crt \
         -keyout /etc/apache2/ssl/apache.key \
-        -subj "/C=Country/ST=State/L=City/O=Organization/CN=localhost"
+        -subj "/CN=localhost"
         
     sed -i '/SSLCertificateFile.*snakeoil\.pem/c\SSLCertificateFile \/etc\/apache2\/ssl\/apache.crt' $conf_file
     sed -i '/SSLCertificateKeyFile.*snakeoil\.key/cSSLCertificateKeyFile \/etc\/apache2\/ssl\/apache.key' $conf_file
@@ -35,9 +35,10 @@ configure_ssl() {
 }
 
 configure_apache() {
-    echo "ServerName 0.0.0.0" >> /etc/apache2/apache2.conf
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     a2enmod ssl rewrite
     configure_ssl
+    rm index.html
     a2ensite default-ssl.conf
     service apache2 restart
 }
