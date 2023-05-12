@@ -12,7 +12,7 @@ configure_db() {
 configure_wp() {
     wp core download --allow-root
     wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
-    wp core install --url=localhost --title="$1" --admin_user="$2" --admin_email="$3" --admin_password="$4" --allow-root
+    wp core install --url=localhost --title="$SITE_TITLE" --admin_user="$ADMIN_USER" --admin_email="$ADMIN_EMAIL" --admin_password="$ADMIN_PASSWORD" --allow-root
 }
 
 change_max_size() {
@@ -21,9 +21,24 @@ change_max_size() {
     sed -i 's/post_max_size = 8M/post_max_size = 256M/' $php_ini_file
 }
 
+configure_ssl() {
+    conf_file=/etc/apache2/sites-available/default-ssl.conf
+    mkdir /etc/apache2/ssl
+    openssl req -x509 -new -days 365 -newkey rsa:4096 -sha256 -nodes \
+        -out /etc/apache2/ssl/apache.crt \
+        -keyout /etc/apache2/ssl/apache.key \
+        -subj "/C=Country/ST=State/L=City/O=Organization/CN=localhost"
+        
+    sed -i '/SSLCertificateFile.*snakeoil\.pem/c\SSLCertificateFile \/etc\/apache2\/ssl\/apache.crt' $conf_file
+    sed -i '/SSLCertificateKeyFile.*snakeoil\.key/cSSLCertificateKeyFile \/etc\/apache2\/ssl\/apache.key' $conf_file
+    sed -i '/IfModule/d' $conf_file
+}
+
 configure_apache() {
-    echo "ServerName localhost" >> /etc/apache2/apache2.conf
-    a2enmod rewrite
+    echo "ServerName 0.0.0.0" >> /etc/apache2/apache2.conf
+    a2enmod ssl rewrite
+    configure_ssl
+    a2ensite default-ssl.conf
     service apache2 restart
 }
 
@@ -31,16 +46,16 @@ install_plugins() {
     wp plugin uninstall $(wp plugin list --field=name --status=inactive --allow-root) --allow-root
     wp plugin install $(echo ${DEFAULT_PLUGINS} | jq -r ".[]") --activate --allow-root
 
-    if [[ $(echo $1 | jq -r '. | length') -gt 0 ]]
+    if [[ $(echo $PLUGINS | jq -r '. | length') -gt 0 ]]
     then 
         wp plugin install $(echo $1 | jq -r ".[]") --activate --allow-root
     fi
     
-    if [[ $(ls -A plugins | wc -l ) -gt 1 ]] 
+    if [[ $(ls plugins | wc -l) -gt 0 ]] 
     then 
         for plugin in $(ls plugins)
         do
-            wp plugin install $plugin --activate --allow-root
+            wp plugin install plugins/$plugin --activate --allow-root
         done
     fi
 }
@@ -57,7 +72,7 @@ import() {
 
 configure_db
 change_max_size
-configure_wp $SITE_TITLE $ADMIN_USER $ADMIN_EMAIL $ADMIN_PASSWORD
+configure_wp
 configure_apache
-install_plugins $PLUGINS
+install_plugins
 import

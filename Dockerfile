@@ -1,6 +1,6 @@
 FROM ubuntu:latest
 
-WORKDIR /usr/src/wordpress
+WORKDIR /var/www/html
 
 ARG PLUGINS='[]'
 ARG SITE_TITLE
@@ -16,6 +16,7 @@ ENV ADMIN_PASSWORD=$ADMIN_PASSWORD
 ENV DEBIAN_FRONTEND=noninteractive
 
 EXPOSE 80
+EXPOSE 443
 
 # Install base dependencies
 RUN apt-get update && apt-get install -y \
@@ -26,7 +27,8 @@ RUN apt-get update && apt-get install -y \
     libapache2-mod-php \
     curl \
     unzip \
-    jq
+    jq \
+    openssl
 
 # Install WP-CLI
 RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
@@ -37,6 +39,9 @@ RUN curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli
 COPY templates templates
 COPY plugins plugins
 COPY setup .
+
 RUN service mysql start && ./setup
 
-CMD service mysql start && wp server --host=0.0.0.0 --allow-root
+CMD service mysql start \
+    && service apache2 restart \
+    && wp server --host=0.0.0.0 --allow-root
