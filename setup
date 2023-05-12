@@ -4,15 +4,15 @@ DEFAULT_PLUGINS='["wordpress-importer"]'
 
 configure_db() {
     mysql -u root -e "CREATE DATABASE wordpress"
-    mysql -u root -e "CREATE USER 'wordpressuser'@'localhost' IDENTIFIED BY 'password'"
-    mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'localhost'"
+    mysql -u root -e "CREATE USER 'wordpressuser'@'127.0.0.1' IDENTIFIED BY 'password'"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpressuser'@'127.0.0.1'"
     mysql -u root -e "FLUSH PRIVILEGES"
 }
 
 configure_wp() {
     wp core download --allow-root
-    wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --allow-root
-    wp core install --url=localhost --title="$SITE_TITLE" --admin_user="$ADMIN_USER" --admin_email="$ADMIN_EMAIL" --admin_password="$ADMIN_PASSWORD" --allow-root
+    wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --dbhost=127.0.0.1 --skip-check --allow-root
+    wp core install --url=https://localhost --title="$SITE_TITLE" --admin_user="$ADMIN_USER" --admin_email="$ADMIN_EMAIL" --admin_password="$ADMIN_PASSWORD" --allow-root
 }
 
 change_max_size() {
