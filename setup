@@ -12,7 +12,7 @@ configure_db() {
 configure_wp() {
     wp core download --allow-root
     wp config create --dbname=wordpress --dbpass=password --dbuser=wordpressuser --dbhost=127.0.0.1 --skip-check --allow-root
-    wp core install --url=https://localhost --title="$SITE_TITLE" --admin_user="$ADMIN_USER" --admin_email="$ADMIN_EMAIL" --admin_password="$ADMIN_PASSWORD" --allow-root
+    wp core install --url="$SITE_URL" --title="$SITE_TITLE" --admin_user="$ADMIN_USER" --admin_email="$ADMIN_EMAIL" --admin_password="$ADMIN_PASSWORD" --allow-root
 }
 
 change_max_size() {
@@ -32,10 +32,11 @@ configure_ssl() {
     sed -i '/SSLCertificateFile.*snakeoil\.pem/c\SSLCertificateFile \/etc\/apache2\/ssl\/apache.crt' $conf_file
     sed -i '/SSLCertificateKeyFile.*snakeoil\.key/cSSLCertificateKeyFile \/etc\/apache2\/ssl\/apache.key' $conf_file
     sed -i '/IfModule/d' $conf_file
+    
+    sed -i '/^<\/VirtualHost>/i Redirect / https://:443/' /etc/apache2/sites-available/000-default.conf
 }
 
 configure_apache() {
-    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     a2enmod ssl rewrite
     configure_ssl
     rm index.html
